@@ -1,15 +1,10 @@
 "use client";
 
-import * as React from "react";
-import type {ColumnDef,
-    ColumnFiltersState,
-    SortingState, } from "@tanstack/react-table";
 import {
+    type ColumnDef,
     flexRender,
     getCoreRowModel,
-    getFilteredRowModel,
     getPaginationRowModel,
-    getSortedRowModel,
     useReactTable,
 } from "@tanstack/react-table";
 
@@ -22,49 +17,32 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 
+// Định nghĩa props cho component Bảng
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[];
     data: TData[];
 }
 
-export function TourDataTable<TData, TValue>({
-                                                 columns,
-                                                 data,
-                                             }: DataTableProps<TData, TValue>) {
-    const [sorting, setSorting] = React.useState<SortingState>([]);
-    const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-
+/**
+ * Đây là component Bảng Dữ liệu *con* (sub-table).
+ * Nó được thiết kế đơn giản, không có Sắp xếp hay Lọc,
+ * chỉ để hiển thị dữ liệu chi tiết bên trong trang TourDetailPage.
+ */
+export function TourDetailDataTable<TData, TValue>({
+                                                       columns,
+                                                       data,
+                                                   }: DataTableProps<TData, TValue>) {
     const table = useReactTable({
         data,
         columns,
         getCoreRowModel: getCoreRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
-        onSortingChange: setSorting,
-        getSortedRowModel: getSortedRowModel(),
-        onColumnFiltersChange: setColumnFilters,
-        getFilteredRowModel: getFilteredRowModel(),
-        state: {
-            sorting,
-            columnFilters,
-        },
+        getPaginationRowModel: getPaginationRowModel(), // Kích hoạt phân trang
     });
 
     return (
         <div>
-            {/* Ô Lọc (Filter) */}
-            <div className="flex items-center py-4">
-                <Input
-                    placeholder="Lọc theo tên tour..."
-                    value={(table.getColumn("title")?.getFilterValue() as string) ?? ""}
-                    onChange={(event) =>
-                        table.getColumn("title")?.setFilterValue(event.target.value)
-                    }
-                    className="max-w-sm"
-                />
-            </div>
-
+            {/* Bảng Dữ Liệu */}
             <div className="rounded-md border">
                 <Table>
                     <TableHeader>
@@ -103,12 +81,13 @@ export function TourDataTable<TData, TValue>({
                                 </TableRow>
                             ))
                         ) : (
+                            // Trường hợp không có dữ liệu
                             <TableRow>
                                 <TableCell
                                     colSpan={columns.length}
                                     className="h-24 text-center"
                                 >
-                                    Không có dữ liệu.
+                                    Chưa có chi tiết chuyến đi nào.
                                 </TableCell>
                             </TableRow>
                         )}
@@ -116,6 +95,7 @@ export function TourDataTable<TData, TValue>({
                 </Table>
             </div>
 
+            {/* Phân trang */}
             <div className="flex items-center justify-end space-x-2 py-4">
                 <Button
                     variant="outline"
@@ -137,3 +117,4 @@ export function TourDataTable<TData, TValue>({
         </div>
     );
 }
+

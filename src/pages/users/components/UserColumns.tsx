@@ -1,9 +1,9 @@
-// src/pages/bookings/components/BookingColumns.tsx
+// src/pages/users/components/UserColumns.tsx
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, MoreHorizontal } from "lucide-react";
-import type { Booking } from "@/types";
+import type { User } from "@/types";
 import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
@@ -25,78 +25,57 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { useDeleteBooking } from "@/hooks/useBookings";
+import { useDeleteUser } from "@/hooks/useUsers";
 import { toast } from "sonner";
-import { BookingForm } from "./BookingForm";
-
-const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("vi-VN", {
-        style: "currency",
-        currency: "VND",
-    }).format(price);
-};
+import { UserForm } from "./UserForm"; // Sẽ tạo ở bước sau
 
 const formatDate = (dateString?: string) => {
     if (!dateString) return "N/A";
+    // Java Instant (2025-11-02T16:03:00Z) có thể convert trực tiếp
     return new Date(dateString).toLocaleDateString("vi-VN");
 };
 
-export const columns: ColumnDef<Booking>[] = [
+export const columns: ColumnDef<User>[] = [
     {
-        accessorKey: "id",
+        accessorKey: "fullName",
         header: ({ column }) => {
             return (
                 <Button
                     variant="ghost"
                     onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
                 >
-                    ID Booking
+                    Tên đầy đủ
                     <ArrowUpDown className="ml-2 h-4 w-4" />
                 </Button>
             );
         },
-        cell: ({ row }) => <div className="font-medium">{row.original.id}</div>,
+        cell: ({ row }) => <div className="pl-4 font-medium">{row.original.fullName}</div>,
     },
     {
-        accessorKey: "contactEmail",
+        accessorKey: "email",
         header: "Email",
     },
     {
-        accessorKey: "contactPhone",
-        header: "Điện thoại",
-    },
-    {
-        accessorKey: "totalPrice",
-        header: "Tổng tiền",
-        cell: ({ row }) => <div className="font-medium">{formatPrice(row.original.totalPrice)}</div>,
+        accessorKey: "role",
+        header: "Vai trò",
+        cell: ({ row }) => {
+            const role = row.original.role;
+            const isAdmin = role.nameRole.toUpperCase() === "ADMIN";
+            return (
+                <Badge variant={isAdmin ? "destructive" : "secondary"}>
+                    {role.nameRole}
+                </Badge>
+            );
+        }
     },
     {
         accessorKey: "status",
         header: "Trạng thái",
         cell: ({ row }) => {
-            const status = row.original.status;
-            let variant: "default" | "secondary" | "destructive" | "outline" = "secondary";
-            let className = "";
-            switch (status) {
-                case "ACTIVE":
-                    variant = "default";
-                    className = "bg-green-600 hover:bg-green-700";
-                    break;
-                case "PENDING":
-                    variant = "outline";
-                    className = "border-yellow-500 text-yellow-600";
-                    break;
-                case "CANCELLED":
-                    variant = "destructive";
-                    break;
-                case "COMPLETED":
-                    variant = "default";
-                    className = "bg-blue-600 hover:bg-blue-700";
-                    break;
-            }
+            const status = row.original.status; // boolean
             return (
-                <Badge variant={variant} className={className}>
-                    {status}
+                <Badge variant={status ? "default" : "outline"} className={status ? "bg-green-600" : ""}>
+                    {status ? "Active" : "Inactive"}
                 </Badge>
             );
         },
@@ -109,21 +88,17 @@ export const columns: ColumnDef<Booking>[] = [
     {
         id: "actions",
         cell: ({ row }) => {
-            const booking = row.original;
-            const deleteBookingMutation = useDeleteBooking();
+            const user = row.original;
+            const deleteUserMutation = useDeleteUser();
+
+            // Cẩn thận: Không cho xóa Admin (ví dụ)
+            const isDeletingAdmin = user.role.nameRole.toUpperCase() === "ADMIN";
 
             const handleDelete = () => {
-                if (!booking.id) {
-                    toast.error("Booking ID không hợp lệ!");
-                    return;
-                }
-                deleteBookingMutation.mutate(booking.id, {
-                    onSuccess: () => {
-                        toast.success(`Đã xóa booking: ${booking.id}`);
-                    },
-                    onError: (err) => {
-                        toast.error("Lỗi khi xóa booking: " + err.message);
-                    },
+                if (!user.id) return;
+                deleteUserMutation.mutate(user.id, {
+                    onSuccess: () => toast.success(`Đã xóa user: ${user.fullName}`),
+                    onError: (err) => toast.error("Lỗi khi xóa user: " + err.message),
                 });
             };
 
@@ -139,18 +114,18 @@ export const columns: ColumnDef<Booking>[] = [
                         <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Hành động</DropdownMenuLabel>
 
-                            <BookingForm initialData={booking}>
+                            <UserForm initialData={user}>
                                 <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                                     Chỉnh sửa
                                 </DropdownMenuItem>
-                            </BookingForm>
+                            </UserForm>
 
                             <DropdownMenuSeparator />
 
                             <AlertDialogTrigger asChild>
                                 <DropdownMenuItem
                                     className="text-red-600"
-                                    disabled={deleteBookingMutation.isPending}
+                                    disabled={isDeletingAdmin} // Không cho xóa Admin
                                 >
                                     Xóa
                                 </DropdownMenuItem>
@@ -162,17 +137,16 @@ export const columns: ColumnDef<Booking>[] = [
                         <AlertDialogHeader>
                             <AlertDialogTitle>Bạn có chắc chắn muốn xóa?</AlertDialogTitle>
                             <AlertDialogDescription>
-                                Hành động này không thể hoàn tác. Booking ID "{booking.id}" sẽ bị xóa vĩnh viễn.
+                                User "{user.fullName}" sẽ bị xóa vĩnh viễn.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                            <AlertDialogCancel disabled={deleteBookingMutation.isPending}>Hủy</AlertDialogCancel>
+                            <AlertDialogCancel>Hủy</AlertDialogCancel>
                             <AlertDialogAction
                                 onClick={handleDelete}
                                 className="bg-red-600 hover:bg-red-700"
-                                disabled={deleteBookingMutation.isPending}
                             >
-                                {deleteBookingMutation.isPending ? "Đang xóa..." : "Xóa"}
+                                Xóa
                             </AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>

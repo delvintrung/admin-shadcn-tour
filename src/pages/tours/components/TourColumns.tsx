@@ -56,12 +56,10 @@ export const columns: ColumnDef<Tour>[] = [
             </div>
         ),
     },
-    // Cột Địa điểm
     {
         accessorKey: "location",
         header: "Địa điểm",
     },
-    // Cột Giá (Lấy từ dữ liệu lồng)
     {
         id: "price",
         header: "Giá (Người lớn)",
@@ -77,7 +75,6 @@ export const columns: ColumnDef<Tour>[] = [
             return <div className="font-medium">{formatPrice(price)}</div>;
         },
     },
-    // Cột Trạng thái (Dùng Badge)
     {
         accessorKey: "status",
         header: "Trạng thái",
@@ -85,13 +82,12 @@ export const columns: ColumnDef<Tour>[] = [
             const status = row.original.status;
             const variant = status === "ACTIVE" ? "default" : "secondary";
             return (
-                <Badge variant={variant} className={status === "ACTIVE" ? "bg-green-600" : ""}>
+                <Badge variant={variant} className={status.toUpperCase() === "ACTIVE" ? "bg-green-600" : "bg-red-600"}>
                     {status}
                 </Badge>
             );
         },
     },
-    // Cột Actions (Dropdown)
     {
         id: "actions",
         cell: ({ row }) => {
@@ -104,7 +100,11 @@ export const columns: ColumnDef<Tour>[] = [
                     return;
                 }
 
-                deleteTourMutation.mutate(tour.id, {
+                deleteTourMutation.mutate({id: tour?.id, body: tour?.status.toUpperCase() === "ACTIVE" ? {
+                        "status":"INACTIVE"
+                    } : {
+                        "status":"ACTIVE"
+                    }}, {
                     onSuccess: () => {
                         toast.success(`Đã xóa tour: ${tour.title}`);
                     },
@@ -136,28 +136,31 @@ export const columns: ColumnDef<Tour>[] = [
 
                             <DropdownMenuSeparator />
 
-                            {/* Nút Xóa: Mở Dialog xác nhận */}
                             <AlertDialogTrigger asChild>
-                                <DropdownMenuItem className="text-red-600">
+                                {tour.status.toUpperCase() === "ACTIVE" ? <DropdownMenuItem className="text-red-600">
                                     Xóa
-                                </DropdownMenuItem>
+                                </DropdownMenuItem> : <DropdownMenuItem className="text-green-600">
+                                    Khôi phục
+                                </DropdownMenuItem>}
+
                             </AlertDialogTrigger>
 
                         </DropdownMenuContent>
                     </DropdownMenu>
 
-                    {/* Dialog Xác Nhận Xóa */}
                     <AlertDialogContent>
                         <AlertDialogHeader>
-                            <AlertDialogTitle>Bạn có chắc chắn muốn xóa?</AlertDialogTitle>
+                            <AlertDialogTitle>{tour?.status.toUpperCase() === "ACTIVE"? "Bạn có chắc chắn muốn xóa?": `Xác nhận khôi phục ${tour?.title}`}</AlertDialogTitle>
                             <AlertDialogDescription>
-                                Hành động này không thể hoàn tác. Tour "{tour.title}" sẽ bị xóa vĩnh viễn.
+                                {tour?.status.toUpperCase() === "ACTIVE"? `Hành động này không thể hoàn tác. Tour "${tour.title}" sẽ bị xóa vĩnh viễn.`:
+                                    `Bạn có chắc chắn muốn khôi phục tour "${tour.title}" không?`}
+
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                             <AlertDialogCancel>Hủy</AlertDialogCancel>
                             <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
-                                Xóa
+                                {tour?.status.toUpperCase() === "ACTIVE"? "Xóa" : "Khôi phục"}
                             </AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>

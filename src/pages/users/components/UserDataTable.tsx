@@ -1,10 +1,8 @@
 "use client";
 
 import * as React from "react";
-import type {ColumnDef,
-    ColumnFiltersState,
-    SortingState, } from "@tanstack/react-table";
 import {
+
     flexRender,
     getCoreRowModel,
     getFilteredRowModel,
@@ -12,6 +10,10 @@ import {
     getSortedRowModel,
     useReactTable,
 } from "@tanstack/react-table";
+
+import type {ColumnDef,
+    ColumnFiltersState,
+    SortingState, } from "@tanstack/react-table";
 
 import {
     Table,
@@ -29,7 +31,7 @@ interface DataTableProps<TData, TValue> {
     data: TData[];
 }
 
-export function TourDataTable<TData, TValue>({
+export function UserDataTable<TData, TValue>({
                                                  columns,
                                                  data,
                                              }: DataTableProps<TData, TValue>) {
@@ -53,13 +55,12 @@ export function TourDataTable<TData, TValue>({
 
     return (
         <div>
-            {/* Ô Lọc (Filter) */}
             <div className="flex items-center py-4">
                 <Input
-                    placeholder="Lọc theo tên tour..."
-                    value={(table.getColumn("title")?.getFilterValue() as string) ?? ""}
+                    placeholder="Lọc theo tên người dùng..."
+                    value={(table.getColumn("fullName")?.getFilterValue() as string) ?? ""}
                     onChange={(event) =>
-                        table.getColumn("title")?.setFilterValue(event.target.value)
+                        table.getColumn("fullName")?.setFilterValue(event.target.value)
                     }
                     className="max-w-sm"
                 />

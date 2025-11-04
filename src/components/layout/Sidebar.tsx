@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, Map,CableCar } from "lucide-react";
+import { LayoutDashboard, Map,CableCar, Users, ClipboardType   } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 
@@ -17,9 +17,19 @@ const navLinks = [
         icon: Map,
     },
     {
+        to: "/tours-detail",
+        label: "Quản lý chi tiết Tour",
+        icon: ClipboardType ,
+    },
+    {
         to: "/bookings",
         label: "Quản lý Booking",
         icon: CableCar,
+    },
+    {
+        to: "/users",
+        label: "Quản lý User",
+        icon: Users ,
     },
 ];
 
@@ -33,14 +43,12 @@ export function Sidebar() {
                 </NavLink>
             </div>
 
-            {/* Danh sách link */}
             <nav className="flex-1 space-y-2 p-4">
                 {navLinks.map((link) => (
                     <NavLink
                         key={link.to}
                         to={link.to}
-                        end // 'end' prop đảm bảo link "/" không bị active khi ở "/tours"
-                        // Dùng hàm trong className để check active
+                        end
                         className={({ isActive }) =>
                             cn(
                                 buttonVariants({ variant: isActive ? "secondary" : "ghost" }),

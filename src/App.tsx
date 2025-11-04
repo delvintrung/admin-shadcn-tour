@@ -3,7 +3,11 @@ import './App.css'
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import {MainLayout} from "@/components/layout/Mainlayout.tsx";
 import {DashboardPage} from "@/pages/DashboardPage.tsx";
-import {BookingsPage} from "@/pages/BookingPage.tsx";
+import {BookingsPage} from "@/pages/bookings/BookingPage.tsx";
+import {UsersPage} from "@/pages/users/UserPage.tsx";
+import {ToursDetailPage} from "@/pages/tours-detail/ToursDetailPage.tsx";
+import {ToursDetailByIdPage} from "@/pages/tours-detail/components/TourDetailByIdPage.tsx";
+import {NotFoundPage} from "@/pages/404Page.tsx";
 
 function App() {
     return (
@@ -13,7 +17,10 @@ function App() {
                      <Route index element={<DashboardPage />} />
                     <Route path="tours" element={<ToursPage />} />
                     <Route path="bookings" element={<BookingsPage />} />
-
+                    <Route path="users" element={<UsersPage />} />
+                    <Route path="tours-detail" element={<ToursDetailPage />} />
+                    <Route path="tours-detail/:id/edit" element={<ToursDetailByIdPage/>} />
+                    <Route path="*" element={<NotFoundPage/>} />
                 </Route>
             </Routes>
         </BrowserRouter>

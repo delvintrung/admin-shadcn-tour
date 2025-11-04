@@ -3,10 +3,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {AxiosAdmin} from "@/lib/axios";
 import type { Tour } from "@/types";
 
-// 1. Hook để LẤY TẤT CẢ Tour (GET)
 export function useGetTours() {
     return useQuery({
-        queryKey: ["tours"], // Đây là "khóa" để cache
+        queryKey: ["tours"],
         queryFn: async () => {
             const { data } = await AxiosAdmin.get("/tours");
             const results = data?.data.result;
@@ -15,7 +14,51 @@ export function useGetTours() {
     });
 }
 
-// 2. Hook để THÊM Tour (POST)
+type UploadImagePayload = {
+    imageFile: File;
+    folder: string;
+}
+
+export function useUploadImage() {
+    return useMutation({
+        mutationFn: async (variables: UploadImagePayload) => {
+            const { imageFile, folder } = variables;
+            const formData = new FormData();
+            formData.append("file", imageFile);
+            formData.append("folder", folder);
+
+            const { data } = await AxiosAdmin.post(
+                "/tours/file",
+                formData,
+                {
+                    headers: {
+                    },
+                }
+            );
+
+
+            if (typeof data.data.fileName === "string") {
+                return data.data.fileName as string;
+            }
+            if (typeof data === "string") {
+                return data;
+            }
+
+            throw new Error("API upload không trả về URL/filename dạng string");
+        },
+    });
+}
+
+export function useGetTourById(id: string) {
+    return useQuery({
+        queryKey: ["tour", id],
+        queryFn: async () => {
+            const { data } = await AxiosAdmin.get(`/tours/${id}`);
+            return data?.data;
+        },
+    });
+}
+
 export function useAddTour() {
     const queryClient = useQueryClient();
     return useMutation({
@@ -47,12 +90,12 @@ export function useUpdateTour() {
     });
 }
 
-// 4. Hook để XÓA Tour (DELETE)
 export function useDeleteTour() {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: async (id: string) => {
-            await AxiosAdmin.delete(`/tours/${id}`);
+        mutationFn: async (variables: { id: string; body: any }) => {
+            const { id, body } = variables;
+            await AxiosAdmin.patch(`/tours/${id}/status`, body);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["tours"] });

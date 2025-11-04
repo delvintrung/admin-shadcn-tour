@@ -1,7 +1,7 @@
 
-import { TourDataTable } from "@/pages/tours/components/TourDataTable";
-import { Button } from "@/components/ui/button";
-import { useGetBookings } from "@/hooks/useBookings";
+import { TourDataTable } from "@/pages/tours/components/TourDataTable.tsx";
+import { Button } from "@/components/ui/button.tsx";
+import { useGetBookings } from "@/hooks/useBookings.ts";
 import {BookingForm} from "@/pages/bookings/components/BookingForm.tsx";
 import {columns} from "@/pages/tours/components/TourColumns.tsx";
 import {BookingDataTable} from "@/pages/bookings/components/BookingDataTable.tsx"; // Import hook bookings

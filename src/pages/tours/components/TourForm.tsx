@@ -25,16 +25,16 @@ import {
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/ui/select"; // Cần cho trường Status
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { Tour } from "@/types";
 import { useState } from "react";
 import type { ReactNode } from "react";
-import { useAddTour, useUpdateTour } from "@/hooks/useTours";
-import { toast } from "sonner"; // Chúng ta sẽ dùng toast thay alert
+import { useAddTour, useUpdateTour, useUploadImage } from "@/hooks/useTours";
+import { toast } from "sonner";
+import {Label} from "@/components/ui/label.tsx";
 
-// 1. Zod Schema (Không đổi)
 const tourSchema = z.object({
     title: z.string().min(1, "Tên tour là bắt buộc"),
     shortDesc: z.string().min(1, "Mô tả ngắn là bắt buộc"),
@@ -42,7 +42,7 @@ const tourSchema = z.object({
     duration: z.string().min(1, "Thời lượng là bắt buộc"),
     capacity: z.coerce.number().min(1, "Số chỗ phải lớn hơn 0"),
     location: z.string().min(1, "Địa điểm là bắt buộc"),
-    status: z.enum(["ACTIVE", "PENDING"]),
+    status: z.enum(["ACTIVE", "INACTIVE"]),
     startLocation: z.string().min(1, "Nơi đi là bắt buộc"),
     startDay: z.string().min(1, "Ngày đi là bắt buộc"),
     endDay: z.string().min(1, "Ngày về là bắt buộc"),
@@ -67,11 +67,28 @@ interface TourFormProps {
 
 export function TourForm({ initialData, children }: TourFormProps) {
     const [isOpen, setOpen] = useState(false);
+    const [imageUpload, setImageUpload] = useState<File | null>(null)
+    const [previewUrl, setPreviewUrl] = useState<string | null>(initialData?.imageUrl || null);
     const addTourMutation = useAddTour();
     const updateTourMutation = useUpdateTour();
+    const uploadImageMutation = useUploadImage();
     const resolver = zodResolver(tourSchema) as Resolver<TourFormValues>;
 
     const isPending = addTourMutation.isPending || updateTourMutation.isPending;
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (previewUrl && previewUrl.startsWith("blob:")) {
+            URL.revokeObjectURL(previewUrl);
+        }
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            setImageUpload(file);
+            setPreviewUrl(URL.createObjectURL(file));
+        } else {
+            setImageUpload(null);
+            setPreviewUrl(initialData?.imageUrl || null);
+        }
+    };
 
     const form = useForm<TourFormValues>({
         resolver,
@@ -91,12 +108,26 @@ export function TourForm({ initialData, children }: TourFormProps) {
         },
     });
 
-    // --- CẬP NHẬT CHÍNH Ở ĐÂY ---
-    // 4. Xử lý Submit (Đã cập nhật)
-    const onSubmit = (data: TourFormValues) => {
-        // 5. Chuyển đổi dữ liệu (Không đổi)
+    const onSubmit = async (data: TourFormValues) => {
+        let finalImageUrl = initialData?.imageUrl || "";
+
+        if (!initialData && imageUpload) {
+            try {
+                toast.info("Đang tải ảnh lên...");
+                const imageUrl = await uploadImageMutation.mutateAsync({
+                    imageFile: imageUpload,
+                    folder: "tours"
+                });
+                finalImageUrl = imageUrl;
+                toast.success("Tải ảnh lên thành công.");
+            } catch (err) {
+                toast.error("Tải ảnh thất bại: " + (err as Error).message);
+                return;
+            }
+        }
         const formattedData: Tour = {
             title: data.title,
+            imageUrl: finalImageUrl,
             shortDesc: data.shortDesc,
             longDesc: data.longDesc,
             duration: data.duration,
@@ -111,31 +142,33 @@ export function TourForm({ initialData, children }: TourFormProps) {
                     status: "ACTIVE",
                     tourPrices: [
                         { priceType: "ADULT", price: data.adultPrice },
-                        { priceType: "CHILD", price: data.childPrice },
+                        { priceType: "CHILD", price: data.childPrice == 0 ? 1 : data.childPrice },
                     ],
                 },
             ],
         };
 
         if (initialData && initialData.id) {
-            updateTourMutation.mutate(
-                { id: initialData.id, data: formattedData },
-                {
-                    onSuccess: () => {
-                        toast.success("Cập nhật tour thành công!");
-                        setOpen(false);
-                    },
-                    onError: (err) => {
-                        toast.error("Lỗi khi cập nhật tour: " + err.message);
-                    },
-                }
-            );
+            // updateTourMutation.mutate(
+            //     { id: initialData.id, data: formattedData },
+            //     {
+            //         onSuccess: () => {
+            //             toast.success("Cập nhật tour thành công!");
+            //             setOpen(false);
+            //         },
+            //         onError: (err) => {
+            //             toast.error("Lỗi khi cập nhật tour: " + err.message);
+            //         },
+            //     }
+            // );
         } else {
-            // Chế độ THÊM MỚI
+
+            console.log('Adding new tour with data:', formattedData);
             addTourMutation.mutate(formattedData, {
                 onSuccess: () => {
                     toast.success("Thêm tour mới thành công!");
                     form.reset();
+                    setImageUpload(null);
                     setOpen(false);
                 },
                 onError: (err) => {
@@ -146,7 +179,7 @@ export function TourForm({ initialData, children }: TourFormProps) {
     };
 
     const trigger = children ? (
-        <span onClick={() => setOpen(true)} className="w-full"> {/* Sửa lại: Thêm w-full */}
+        <span onClick={() => setOpen(true)}>
             {children}
         </span>
     ) : (
@@ -277,8 +310,34 @@ export function TourForm({ initialData, children }: TourFormProps) {
                                 </FormItem>
                             )}
                         />
+                        <div className="grid w-full max-w-sm items-center gap-3">
+                        <Label htmlFor="imageUrl">Picture</Label>
+                            <Input
+                                id="imageUpload"
+                                type="file"
+                                accept="image/*"
+                                onChange={handleFileChange}
+                                disabled={isPending || !!initialData}
+                                name="imageUrl"
+                            />
+                            {initialData && (
+                                <p className="text-sm text-muted-foreground">
+                                    Không thể thay đổi ảnh ở chế độ chỉnh sửa.
+                                </p>
+                            )}
+                        </div>
 
-                        {/* --- Chi tiết Tour --- */}
+                        {previewUrl && (
+                            <div className="mt-4">
+                                <Label>Xem trước</Label>
+                                <img
+                                    src={previewUrl}
+                                    alt="Xem trước ảnh tour"
+                                    className="mt-2 h-48 w-full object-cover rounded-md border border-input"
+                                />
+                            </div>
+                        )}
+
                         <h3 className="text-lg font-semibold border-t pt-4">Chi tiết chuyến đi</h3>
 
                         {/* Nơi đi & Ngày đi */}
@@ -358,7 +417,6 @@ export function TourForm({ initialData, children }: TourFormProps) {
                             />
                         </div>
 
-                        {/* Footer (Đã cập nhật) */}
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={isPending}>
                                 Hủy

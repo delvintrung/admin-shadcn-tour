@@ -16,12 +16,13 @@ export interface TourDetail {
 export interface Tour {
     id?: string;
     title: string;
+    imageUrl?: string;
     shortDesc: string;
     longDesc: string;
     duration: string;
     capacity: number;
     location: string;
-    status: "ACTIVE" | "PENDING";
+    status: "ACTIVE" | "INACTIVE";
     tourDetails: TourDetail[];
 }
 
@@ -37,4 +38,21 @@ export interface Booking {
     totalPrice: number;
     updatedAt?: string;
     id_user?: string; 
+}
+
+export interface Role {
+    id: number;
+    nameRole: string;
+    description?: string;
+    status?: boolean;
+}
+
+export interface User {
+    id: string;
+    fullName: string;
+    email: string;
+    role: Role;
+    status: boolean;
+    createdAt?: string;
+    updatedAt?: string;
 }
