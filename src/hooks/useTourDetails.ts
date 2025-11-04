@@ -16,6 +16,10 @@ export interface AddTourDetailPayload {
 }
 
 export interface UpdateTourDetailPayload {
+    tour: {
+        id: string;
+    };
+    id: number;
     startLocation: string;
 
     startDay: string;
@@ -43,6 +47,26 @@ export function useAddTourDetail() {
     });
 }
 
+type updatePayload = {
+    id: number;
+    updatedDetail: UpdateTourDetailPayload;
+}
+
+
+export function useUpdateTourDetail() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (variables: updatePayload) => {
+            const { id, updatedDetail } = variables;
+            const { data } = await AxiosAdmin.put(`/tours/details/${id}`, updatedDetail);
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["tours"] });
+        },
+    });
+}
+
 export function useDeleteTourDetail() {
     const queryClient = useQueryClient();
     return useMutation({
@@ -51,19 +75,6 @@ export function useDeleteTourDetail() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["tours-detail"] });
-        },
-    });
-}
-
-export function useUpdateTourDetail() {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: async (updatedDetail: TourDetail) => {
-            const { data } = await AxiosAdmin.put<TourDetail>(`/tour-details/${updatedDetail.id}`, updatedDetail);
-            return data;
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["tours"] });
         },
     });
 }

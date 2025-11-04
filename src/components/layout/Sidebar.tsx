@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, Map,CableCar, Users, ClipboardType   } from "lucide-react";
+import { LayoutDashboard, Map,CableCar, Users, ClipboardType,DollarSign  } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 
@@ -31,6 +31,11 @@ const navLinks = [
         label: "Quản lý User",
         icon: Users ,
     },
+    {
+        to: "/promotions",
+        label: "Quản lý khuyến mãi",
+        icon: DollarSign ,
+    }
 ];
 
 export function Sidebar() {

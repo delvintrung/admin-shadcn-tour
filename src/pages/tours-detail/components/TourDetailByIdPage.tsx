@@ -45,7 +45,6 @@ export function ToursDetailByIdPage() {
                         <p className="text-xs text-muted-foreground flex items-center"><MapPin className="mr-1 h-3 w-3" /> Địa điểm</p>
                     </CardContent>
                 </Card>
-                {/* ... (Các Card khác) ... */}
             </div>
 
             <Card>
@@ -60,7 +59,6 @@ export function ToursDetailByIdPage() {
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle>Các chuyến đi (Tour Details)</CardTitle>
-                    {/* Nút "Thêm" sẽ dùng TourDetailForm (không có initialData) */}
                     <TourDetailForm tourId={tour.id}>
                         <Button>Thêm chuyến đi mới</Button>
                     </TourDetailForm>

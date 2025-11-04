@@ -7,7 +7,6 @@ import {UserDataTable} from "@/pages/users/components/UserDataTable";
 
 export function UsersPage() {
     const { data: users, isLoading, isError } = useGetUsers();
-    console.log("Users data:", users);
 
     if (isLoading) {
         return <div>Đang tải dữ liệu người dùng...</div>;

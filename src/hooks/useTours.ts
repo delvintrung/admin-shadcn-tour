@@ -73,7 +73,6 @@ export function useAddTour() {
     });
 }
 
-// 3. Hook để CẬP NHẬT Tour (PATCH/PUT)
 export function useUpdateTour() {
     const queryClient = useQueryClient();
     return useMutation({

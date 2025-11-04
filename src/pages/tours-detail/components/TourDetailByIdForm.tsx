@@ -86,6 +86,8 @@ export function TourDetailForm({ tourId, initialData, children }: TourDetailForm
 
         if (isEditMode && initialData) {
             const payload: UpdateTourDetailPayload = {
+                tour: { id: tourId },
+                id: Number(initialData.id),
                 startLocation: data.startLocation,
                 startDay: data.startDay,
                 endDay: data.endDay,
@@ -93,7 +95,7 @@ export function TourDetailForm({ tourId, initialData, children }: TourDetailForm
                 tourPrices: tourPrices,
             };
             updateDetailMutation.mutate(
-                { id: initialData.id, data: payload },
+                {id: Number(initialData.id!),updatedDetail: payload},
                 {
                     onSuccess: () => { toast.success("Cập nhật chi tiết thành công!"); setOpen(false); },
                     onError: (err : any) => toast.error("Lỗi: " + err.message),

@@ -1,5 +1,6 @@
 "use client";
 
+import {useParams} from "react-router-dom";
 import type { ColumnDef } from "@tanstack/react-table";
 import { MoreHorizontal } from "lucide-react";
 import type { TourDetail } from "@/types";
@@ -28,12 +29,17 @@ const formatDate = (dateString?: string) => {
 export const detailColumns: ColumnDef<TourDetail>[] = [
     {
         accessorKey: "startLocation",
-        header: "Nơi đi",
+        header: "Nơi khởi hành",
     },
     {
         accessorKey: "startDay",
         header: "Ngày đi",
         cell: ({ row }) => formatDate(row.original.startDay),
+    },
+    {
+        accessorKey: "endDay",
+        header: "Ngày về",
+        cell: ({ row }) => formatDate(row.original.endDay),
     },
     {
         accessorKey: "status",
@@ -44,16 +50,12 @@ export const detailColumns: ColumnDef<TourDetail>[] = [
         },
     },
 
-    // 3. CỘT ACTIONS (Đã cập nhật)
     {
         id: "actions",
         cell: ({ row }) => {
             const detail = row.original;
             const deleteDetailMutation = useDeleteTourDetail();
-
-            // Giả sử API không cần tourId để Sửa/Xóa 1 chi tiết
-            // Nếu API *cần* tourId, bạn phải truyền nó từ ToursDetailPage.tsx xuống đây
-            const tourId = "TOUR_ID_CHA"; // <-- CHÚ Ý: Cần truyền ID tour cha xuống đây
+            const { id } = useParams<{ id: string }>();
 
             const handleDelete = () => {
                 deleteDetailMutation.mutate(detail.id!, {
@@ -74,14 +76,12 @@ export const detailColumns: ColumnDef<TourDetail>[] = [
                         <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Hành động</DropdownMenuLabel>
 
-                            {/* Nút SỬA (MỚI) */}
-                            <TourDetailForm tourId={tourId} initialData={detail}>
+                            <TourDetailForm tourId={id!} initialData={detail}>
                                 <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                                     Chỉnh sửa
                                 </DropdownMenuItem>
                             </TourDetailForm>
 
-                            {/* Nút XÓA */}
                             <AlertDialogTrigger asChild>
                                 <DropdownMenuItem className="text-red-600" disabled={deleteDetailMutation.isPending}>
                                     Xóa

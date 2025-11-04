@@ -163,7 +163,6 @@ export function TourForm({ initialData, children }: TourFormProps) {
             // );
         } else {
 
-            console.log('Adding new tour with data:', formattedData);
             addTourMutation.mutate(formattedData, {
                 onSuccess: () => {
                     toast.success("Thêm tour mới thành công!");

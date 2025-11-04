@@ -112,7 +112,6 @@ export const columns: ColumnDef<Tour>[] = [
                         toast.error("Lỗi khi xóa tour: " + err.message);
                     },
                 });
-                console.log("Xóa tour:", tour.id);
             };
 
             return (
