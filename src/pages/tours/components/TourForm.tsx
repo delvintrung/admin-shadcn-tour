@@ -33,28 +33,36 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import { useAddTour, useUpdateTour, useUploadImage } from "@/hooks/useTours";
 import { toast } from "sonner";
-import {Label} from "@/components/ui/label.tsx";
+import { Label } from "@/components/ui/label";
 
 const tourSchema = z.object({
     title: z.string().min(1, "Tên tour là bắt buộc"),
     shortDesc: z.string().min(1, "Mô tả ngắn là bắt buộc"),
     longDesc: z.string(),
     duration: z.string().min(1, "Thời lượng là bắt buộc"),
-    capacity: z.coerce.number().min(1, "Số chỗ phải lớn hơn 0"),
     location: z.string().min(1, "Địa điểm là bắt buộc"),
-    status: z.enum(["ACTIVE", "INACTIVE"]),
+    status: z.enum(["ACTIVE", "INACTIVE", "DRAFT"]),
     startLocation: z.string().min(1, "Nơi đi là bắt buộc"),
     startDay: z.string().min(1, "Ngày đi là bắt buộc"),
     endDay: z.string().min(1, "Ngày về là bắt buộc"),
+
+    // 1. Cập nhật Schema cho Capacity và RemainingSeats
+    capacity: z.preprocess(
+        (val) => (val === "" ? undefined : Number(val)),
+        z.number({ error: "Số chỗ phải là số" }).min(1, "Số chỗ phải lớn hơn 0")
+    ),
+    remainingSeats: z.preprocess(
+        (val) => (val === "" ? undefined : Number(val)),
+        z.number({ error: "Số chỗ còn lại phải là số" }).min(0, "Không được âm")
+    ),
+
     adultPrice: z.preprocess(
         (val) => (val === "" ? undefined : Number(val)),
-        z.number({ error: "Giá phải là số" })
-            .min(0, "Giá không được âm")
+        z.number({ error: "Giá phải là số" }).min(0, "Giá không được âm")
     ),
     childPrice: z.preprocess(
         (val) => (val === "" ? undefined : Number(val)),
-        z.number({ error: "Giá phải là số" })
-            .min(0, "Giá không được âm")
+        z.number({ error: "Giá phải là số" }).min(0, "Giá không được âm")
     ),
 });
 
@@ -69,6 +77,7 @@ export function TourForm({ initialData, children }: TourFormProps) {
     const [isOpen, setOpen] = useState(false);
     const [imageUpload, setImageUpload] = useState<File | null>(null)
     const [previewUrl, setPreviewUrl] = useState<string | null>(initialData?.imageUrl || null);
+
     const addTourMutation = useAddTour();
     const updateTourMutation = useUpdateTour();
     const uploadImageMutation = useUploadImage();
@@ -97,14 +106,17 @@ export function TourForm({ initialData, children }: TourFormProps) {
             shortDesc: initialData?.shortDesc || "",
             longDesc: initialData?.longDesc || "",
             duration: initialData?.duration || "",
-            capacity: initialData?.capacity || 25,
             location: initialData?.location || "",
             status: initialData?.status || "ACTIVE",
-            startLocation: initialData?.tourDetails[0]?.startLocation || "",
-            startDay: initialData?.tourDetails[0]?.startDay || "",
-            endDay: initialData?.tourDetails[0]?.endDay || "",
-            adultPrice: initialData?.tourDetails[0]?.tourPrices.find(p => p.priceType === "ADULT")?.price || 0,
-            childPrice: initialData?.tourDetails[0]?.tourPrices.find(p => p.priceType === "CHILD")?.price || 0,
+            startLocation: initialData?.tourDetails?.[0]?.startLocation || "",
+            startDay: initialData?.tourDetails?.[0]?.startDay || "",
+            endDay: initialData?.tourDetails?.[0]?.endDay || "",
+
+            capacity: initialData?.tourDetails?.[0]?.capacity || 25,
+            remainingSeats: initialData?.tourDetails?.[0]?.remainingSeats || 25,
+
+            adultPrice: initialData?.tourDetails?.[0]?.tourPrices.find(p => p.priceType === "ADULT")?.price || 0,
+            childPrice: initialData?.tourDetails?.[0]?.tourPrices.find(p => p.priceType === "CHILD")?.price || 0,
         },
     });
 
@@ -125,20 +137,24 @@ export function TourForm({ initialData, children }: TourFormProps) {
                 return;
             }
         }
+
+        // 3. Gán data vào payload gửi đi
         const formattedData: Tour = {
             title: data.title,
             imageUrl: finalImageUrl,
             shortDesc: data.shortDesc,
             longDesc: data.longDesc,
             duration: data.duration,
-            capacity: data.capacity,
             location: data.location,
             status: data.status,
+
             tourDetails: [
                 {
                     startLocation: data.startLocation,
                     startDay: data.startDay,
                     endDay: data.endDay,
+                    capacity: data.capacity,
+                    remainingSeats: data.remainingSeats,
                     status: "ACTIVE",
                     tourPrices: [
                         { priceType: "ADULT", price: data.adultPrice },
@@ -149,20 +165,19 @@ export function TourForm({ initialData, children }: TourFormProps) {
         };
 
         if (initialData && initialData.id) {
-            // updateTourMutation.mutate(
-            //     { id: initialData.id, data: formattedData },
-            //     {
-            //         onSuccess: () => {
-            //             toast.success("Cập nhật tour thành công!");
-            //             setOpen(false);
-            //         },
-            //         onError: (err) => {
-            //             toast.error("Lỗi khi cập nhật tour: " + err.message);
-            //         },
-            //     }
-            // );
+            updateTourMutation.mutate(
+                { id: initialData.id, data: formattedData },
+                {
+                    onSuccess: () => {
+                        toast.success("Cập nhật tour thành công!");
+                        setOpen(false);
+                    },
+                    onError: (err) => {
+                        toast.error("Lỗi khi cập nhật tour: " + err.message);
+                    },
+                }
+            );
         } else {
-
             addTourMutation.mutate(formattedData, {
                 onSuccess: () => {
                     toast.success("Thêm tour mới thành công!");
@@ -197,7 +212,6 @@ export function TourForm({ initialData, children }: TourFormProps) {
 
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                        {/* Tên tour */}
                         <FormField
                             control={form.control}
                             name="title"
@@ -212,7 +226,6 @@ export function TourForm({ initialData, children }: TourFormProps) {
                             )}
                         />
 
-                        {/* Thời lượng & Địa điểm */}
                         <div className="grid grid-cols-2 gap-4">
                             <FormField
                                 control={form.control}
@@ -242,45 +255,30 @@ export function TourForm({ initialData, children }: TourFormProps) {
                             />
                         </div>
 
-                        {/* Số chỗ & Trạng thái */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <FormField
-                                control={form.control}
-                                name="capacity"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Số chỗ</FormLabel>
+                        {/* Trạng thái Tour */}
+                        <FormField
+                            control={form.control}
+                            name="status"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Trạng thái Tour</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
                                         <FormControl>
-                                            <Input type="number" {...field} />
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Chọn trạng thái" />
+                                            </SelectTrigger>
                                         </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="status"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Trạng thái</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Chọn trạng thái" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                <SelectItem value="ACTIVE">ACTIVE</SelectItem>
-                                                <SelectItem value="PENDING">PENDING</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </div>
+                                        <SelectContent>
+                                            <SelectItem value="ACTIVE">ACTIVE</SelectItem>
+                                            <SelectItem value="INACTIVE">INACTIVE</SelectItem>
+                                            <SelectItem value="DRAFT">DRAFT</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
 
-                        {/* Mô tả ngắn */}
                         <FormField
                             control={form.control}
                             name="shortDesc"
@@ -295,13 +293,12 @@ export function TourForm({ initialData, children }: TourFormProps) {
                             )}
                         />
 
-                        {/* Mô tả dài */}
                         <FormField
                             control={form.control}
                             name="longDesc"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Mô tả chi tiết (Long Desc)</FormLabel>
+                                    <FormLabel>Mô tả chi tiết</FormLabel>
                                     <FormControl>
                                         <Textarea rows={5} {...field} />
                                     </FormControl>
@@ -309,8 +306,9 @@ export function TourForm({ initialData, children }: TourFormProps) {
                                 </FormItem>
                             )}
                         />
+
                         <div className="grid w-full max-w-sm items-center gap-3">
-                        <Label htmlFor="imageUrl">Picture</Label>
+                            <Label htmlFor="imageUrl">Hình ảnh</Label>
                             <Input
                                 id="imageUpload"
                                 type="file"
@@ -339,7 +337,36 @@ export function TourForm({ initialData, children }: TourFormProps) {
 
                         <h3 className="text-lg font-semibold border-t pt-4">Chi tiết chuyến đi</h3>
 
-                        {/* Nơi đi & Ngày đi */}
+                        {/* 4. Thêm Input cho Capacity và Remaining Seats */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <FormField
+                                control={form.control}
+                                name="capacity"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Tổng số chỗ (Capacity)</FormLabel>
+                                        <FormControl>
+                                            <Input type="number" placeholder="25" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="remainingSeats"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Số chỗ còn nhận (Remaining)</FormLabel>
+                                        <FormControl>
+                                            <Input type="number" placeholder="25" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+
                         <div className="grid grid-cols-2 gap-4">
                             <FormField
                                 control={form.control}
@@ -369,7 +396,6 @@ export function TourForm({ initialData, children }: TourFormProps) {
                             />
                         </div>
 
-                        {/* Ngày về */}
                         <div className="grid grid-cols-2 gap-4">
                             <FormField
                                 control={form.control}
@@ -386,7 +412,6 @@ export function TourForm({ initialData, children }: TourFormProps) {
                             />
                         </div>
 
-                        {/* Giá */}
                         <div className="grid grid-cols-2 gap-4">
                             <FormField
                                 control={form.control}

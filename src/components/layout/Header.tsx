@@ -78,7 +78,6 @@ export function Header() {
                 </h1>
             </div>
 
-            {/* 3. User Menu (Dropdown) */}
             <div>
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>

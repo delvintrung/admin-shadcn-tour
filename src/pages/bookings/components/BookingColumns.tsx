@@ -1,9 +1,8 @@
-// src/pages/bookings/components/BookingColumns.tsx
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, MoreHorizontal } from "lucide-react";
-import type { Booking } from "@/types";
+import { ArrowUpDown, MoreHorizontal, ChevronDown } from "lucide-react";
+import type { Booking, BookingStatus } from "@/types";
 import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
@@ -12,63 +11,73 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
+    DropdownMenuSub,
+    DropdownMenuSubContent,
+    DropdownMenuSubTrigger,
+    DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { useDeleteBooking } from "@/hooks/useBookings";
+import { useUpdateBooking } from "@/hooks/useBookings";
 import { toast } from "sonner";
-import { BookingForm } from "./BookingForm";
 
-const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("vi-VN", {
-        style: "currency",
-        currency: "VND",
-    }).format(price);
-};
 
-const formatDate = (dateString?: string) => {
+const formatDate = (dateString?: string)=> {
     if (!dateString) return "N/A";
     return new Date(dateString).toLocaleDateString("vi-VN");
 };
 
 export const columns: ColumnDef<Booking>[] = [
     {
+        id: 'expander',
+        header: () => null,
+        cell: ({ row }) => {
+            return (
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={row.getToggleExpandedHandler()}
+                    disabled={!row.getCanExpand()}
+                >
+                    <ChevronDown
+                        className={row.getIsExpanded() ? 'rotate-180 transition-transform' : 'transition-transform'}
+                    />
+                </Button>
+            );
+        },
+    },
+    {
         accessorKey: "id",
+        header: "ID Đơn",
+    },
+    {
+        accessorKey: "contactFullname",
         header: ({ column }) => {
             return (
                 <Button
                     variant="ghost"
                     onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
                 >
-                    ID Booking
+                    Người đặt
                     <ArrowUpDown className="ml-2 h-4 w-4" />
                 </Button>
             );
         },
-        cell: ({ row }) => <div className="font-medium">{row.original.id}</div>,
+        cell: ({ row }) => (
+            <div className="pl-4">
+                <div className="font-medium">{row.original.contactFullName}</div>
+                <div className="text-xs text-muted-foreground">ID User: {row.original.userId}</div>
+            </div>
+        )
     },
     {
         accessorKey: "contactEmail",
-        header: "Email",
-    },
-    {
-        accessorKey: "contactPhone",
-        header: "Điện thoại",
-    },
-    {
-        accessorKey: "totalPrice",
-        header: "Tổng tiền",
-        cell: ({ row }) => <div className="font-medium">{formatPrice(row.original.totalPrice)}</div>,
+        header: "Liên hệ",
+        cell: ({ row }) => (
+            <div>
+                <div>{row.original.contactEmail}</div>
+                <div className="text-xs text-muted-foreground">{row.original.contactPhone}</div>
+            </div>
+        )
     },
     {
         accessorKey: "status",
@@ -110,73 +119,56 @@ export const columns: ColumnDef<Booking>[] = [
         id: "actions",
         cell: ({ row }) => {
             const booking = row.original;
-            const deleteBookingMutation = useDeleteBooking();
+            const updateBookingMutation = useUpdateBooking();
 
-            const handleDelete = () => {
-                if (!booking.id) {
-                    toast.error("Booking ID không hợp lệ!");
-                    return;
-                }
-                deleteBookingMutation.mutate(booking.id, {
-                    onSuccess: () => {
-                        toast.success(`Đã xóa booking: ${booking.id}`);
-                    },
-                    onError: (err) => {
-                        toast.error("Lỗi khi xóa booking: " + err.message);
-                    },
-                });
+            const handleStatusUpdate = (newStatus: BookingStatus) => {
+                if (!booking.id) return;
+                const partialData: Partial<Booking> = {
+                    status: newStatus,
+                };
+
+                updateBookingMutation.mutate(
+                    { id: booking.id.toString(), data: partialData },
+                    {
+                        onSuccess: () => toast.success(`Cập nhật trạng thái sang ${newStatus}`),
+                        onError: (err) => toast.error("Lỗi: " + err.message),
+                    }
+                );
             };
 
             return (
-                <AlertDialog>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">Mở menu</span>
-                                <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Hành động</DropdownMenuLabel>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Mở menu</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Hành động</DropdownMenuLabel>
+                        <DropdownMenuSub>
+                            <DropdownMenuSubTrigger>Cập nhật trạng thái</DropdownMenuSubTrigger>
+                            <DropdownMenuPortal>
+                                <DropdownMenuSubContent>
+                                    <DropdownMenuItem onClick={() => handleStatusUpdate("ACTIVE")}>
+                                        ACTIVE (Xác nhận)
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleStatusUpdate("COMPLETED")}>
+                                        COMPLETED (Hoàn thành)
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleStatusUpdate("CANCELLED")}>
+                                        CANCELLED (Hủy)
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleStatusUpdate("PENDING")}>
+                                        PENDING (Chờ)
+                                    </DropdownMenuItem>
+                                </DropdownMenuSubContent>
+                            </DropdownMenuPortal>
+                        </DropdownMenuSub>
 
-                            <BookingForm initialData={booking}>
-                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                    Chỉnh sửa
-                                </DropdownMenuItem>
-                            </BookingForm>
-
-                            <DropdownMenuSeparator />
-
-                            <AlertDialogTrigger asChild>
-                                <DropdownMenuItem
-                                    className="text-red-600"
-                                    disabled={deleteBookingMutation.isPending}
-                                >
-                                    Xóa
-                                </DropdownMenuItem>
-                            </AlertDialogTrigger>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Bạn có chắc chắn muốn xóa?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                Hành động này không thể hoàn tác. Booking ID "{booking.id}" sẽ bị xóa vĩnh viễn.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel disabled={deleteBookingMutation.isPending}>Hủy</AlertDialogCancel>
-                            <AlertDialogAction
-                                onClick={handleDelete}
-                                className="bg-red-600 hover:bg-red-700"
-                                disabled={deleteBookingMutation.isPending}
-                            >
-                                {deleteBookingMutation.isPending ? "Đang xóa..." : "Xóa"}
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
+                        <DropdownMenuSeparator />
+                    </DropdownMenuContent>
+                </DropdownMenu>
             );
         },
     },

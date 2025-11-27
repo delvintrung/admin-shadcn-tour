@@ -28,7 +28,7 @@ export function useUploadImage() {
             formData.append("folder", folder);
 
             const { data } = await AxiosAdmin.post(
-                "/tours/file",
+                "/tours/upload",
                 formData,
                 {
                     headers: {

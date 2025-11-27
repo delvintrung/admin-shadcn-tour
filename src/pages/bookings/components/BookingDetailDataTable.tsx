@@ -18,32 +18,30 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 
-// Định nghĩa props cho component Bảng
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[];
     data: TData[];
 }
 
-/**
- * Đây là component Bảng Dữ liệu *con* (sub-table).
- * Nó được thiết kế đơn giản, không có Sắp xếp hay Lọc,
- * chỉ để hiển thị dữ liệu chi tiết bên trong trang TourDetailPage.
- */
-export function TourDetailDataTable<TData, TValue>({
-                                                       columns,
-                                                       data,
-                                                   }: DataTableProps<TData, TValue>) {
+export function BookingDetailDataTable<TData, TValue>({
+                                                          columns,
+                                                          data,
+                                                      }: DataTableProps<TData, TValue>) {
     const table = useReactTable({
         data,
         columns,
         getCoreRowModel: getCoreRowModel(),
-        getPaginationRowModel: getPaginationRowModel(), // Kích hoạt phân trang
+        getPaginationRowModel: getPaginationRowModel(),
+        initialState: {
+            pagination: {
+                pageSize: 5, // Mặc định hiển thị 5 dòng cho gọn
+            }
+        }
     });
 
     return (
-        <div>
-            {/* Bảng Dữ Liệu */}
-            <div className="rounded-md border">
+        <div className="space-y-4">
+            <div className="rounded-md border bg-background">
                 <Table>
                     <TableHeader>
                         {table.getHeaderGroups().map((headerGroup) => (
@@ -86,7 +84,7 @@ export function TourDetailDataTable<TData, TValue>({
                                     colSpan={columns.length}
                                     className="h-24 text-center"
                                 >
-                                    Chưa có chi tiết chuyến đi nào.
+                                    Không có chi tiết đơn đặt nào.
                                 </TableCell>
                             </TableRow>
                         )}
@@ -94,26 +92,27 @@ export function TourDetailDataTable<TData, TValue>({
                 </Table>
             </div>
 
-            {/* Phân trang */}
-            <div className="flex items-center justify-end space-x-2 py-4">
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => table.previousPage()}
-                    disabled={!table.getCanPreviousPage()}
-                >
-                    Trang trước
-                </Button>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => table.nextPage()}
-                    disabled={!table.getCanNextPage()}
-                >
-                    Trang sau
-                </Button>
-            </div>
+            {/* Chỉ hiển thị phân trang nếu số lượng dòng > pageSize */}
+            {table.getPageCount() > 1 && (
+                <div className="flex items-center justify-end space-x-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => table.previousPage()}
+                        disabled={!table.getCanPreviousPage()}
+                    >
+                        Trang trước
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => table.nextPage()}
+                        disabled={!table.getCanNextPage()}
+                    >
+                        Trang sau
+                    </Button>
+                </div>
+            )}
         </div>
     );
 }
-

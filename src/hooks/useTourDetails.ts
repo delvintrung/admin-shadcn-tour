@@ -2,13 +2,13 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {AxiosAdmin} from "@/lib/axios";
 import type { TourDetail } from "@/types";
 export interface AddTourDetailPayload {
-    tour: {
-        id: string;
-    };
+    tourId: number
     startLocation: string;
     startDay: string;
     endDay: string;
-    status: "ACTIVE" | "PENDING" | "CLOSED";
+    capacity: number;
+    remainingSeats: number;
+    status: "ACTIVE" | "INACTIVE" | "DRAFT"| "FULL";
     tourPrices: Array<{
         priceType: "ADULT" | "CHILD";
         price: number;
@@ -16,17 +16,17 @@ export interface AddTourDetailPayload {
 }
 
 export interface UpdateTourDetailPayload {
-    tour: {
-        id: string;
-    };
+    tourId: number
     id: number;
     startLocation: string;
 
     startDay: string;
 
     endDay: string;
+    capacity: number;
+    remainingSeats: number;
 
-    status: "ACTIVE" | "PENDING" | "CLOSED";
+    status: "ACTIVE" | "INACTIVE" | "DRAFT"| "FULL";
 
     tourPrices: Array<{
         priceType: "ADULT" | "CHILD";

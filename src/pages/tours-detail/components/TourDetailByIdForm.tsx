@@ -34,7 +34,13 @@ const tourDetailSchema = z.object({
     startLocation: z.string().min(1, "Nơi đi là bắt buộc"),
     startDay: z.string().min(1, "Ngày đi là bắt buộc"),
     endDay: z.string().min(1, "Ngày về là bắt buộc"),
-    status: z.enum(["ACTIVE", "PENDING", "CLOSED"]),
+    capacity: z.preprocess((val) => (val === "" ? undefined : Number(val)),
+        z.number({ error: "Số lượng phải là số" }).min(1, "Số lượng phải lớn hơn 0")),
+    remainingSeats: z.preprocess(
+        (val) => (val === "" ? undefined : Number(val)),
+        z.number({ error: "Chỗ còn lại phải là số" }).min(0, "Chỗ còn lại không được âm")
+    ),
+    status: z.enum(["ACTIVE", "INACTIVE", "DRAFT", "FULL"]),
     adultPrice: z.preprocess(
         (val) => (val === "" ? undefined : Number(val)),
         z.number({ error: "Giá phải là số" }).min(0)
@@ -71,6 +77,8 @@ export function TourDetailForm({ tourId, initialData, children }: TourDetailForm
         defaultValues: {
             startLocation: initialData?.startLocation || "",
             startDay: initialData?.startDay || "",
+            capacity: initialData?.capacity || 0,
+            remainingSeats: initialData?.remainingSeats || 0,
             endDay: initialData?.endDay || "",
             status: initialData?.status || "ACTIVE",
             adultPrice: getPrice("ADULT"),
@@ -86,11 +94,13 @@ export function TourDetailForm({ tourId, initialData, children }: TourDetailForm
 
         if (isEditMode && initialData) {
             const payload: UpdateTourDetailPayload = {
-                tour: { id: tourId },
+                tourId: Number(tourId),
                 id: Number(initialData.id),
                 startLocation: data.startLocation,
                 startDay: data.startDay,
                 endDay: data.endDay,
+                capacity: data.capacity,
+                remainingSeats: data.remainingSeats,
                 status: data.status,
                 tourPrices: tourPrices,
             };
@@ -104,10 +114,12 @@ export function TourDetailForm({ tourId, initialData, children }: TourDetailForm
 
         } else {
             const payload: AddTourDetailPayload = {
-                tour: { id: tourId },
+                tourId: Number(tourId),
                 startLocation: data.startLocation,
                 startDay: data.startDay,
                 endDay: data.endDay,
+                capacity: data.capacity,
+                remainingSeats: data.remainingSeats,
                 status: data.status,
                 tourPrices: tourPrices,
             };
@@ -172,6 +184,30 @@ export function TourDetailForm({ tourId, initialData, children }: TourDetailForm
                         <div className="grid grid-cols-2 gap-4">
                             <FormField
                                 control={form.control}
+                                name="capacity"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Số lượng</FormLabel>
+                                        <FormControl><Input type="number" {...field} /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="remainingSeats"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Chỗ còn lại</FormLabel>
+                                        <FormControl><Input type="number" {...field} /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <FormField
+                                control={form.control}
                                 name="adultPrice"
                                 render={({ field }) => (
                                     <FormItem>
@@ -205,8 +241,9 @@ export function TourDetailForm({ tourId, initialData, children }: TourDetailForm
                                             <SelectGroup>
                                                 <SelectLabel>Status</SelectLabel>
                                                 <SelectItem value="ACTIVE">ACTIVE</SelectItem>
-                                                <SelectItem value="PENDING">PENDING</SelectItem>
-                                                <SelectItem value="CLOSED">CLOSED</SelectItem>
+                                                <SelectItem value="INACTIVE">INACTIVE</SelectItem>
+                                                <SelectItem value="DRAFT">DRAFT</SelectItem>
+                                                <SelectItem value="FULL">FULL</SelectItem>
                                             </SelectGroup>
                                         </SelectContent>
                                     </Select>

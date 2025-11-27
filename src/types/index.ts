@@ -9,7 +9,9 @@ export interface TourDetail {
     startLocation: string;
     startDay: string;
     endDay: string;
-    status: "ACTIVE" | "PENDING" | "CLOSED";
+    capacity: number;
+    remainingSeats: number;
+    status: "ACTIVE" | "INACTIVE" | "DRAFT"| "FULL";
     tourPrices: TourPrice[];
 }
 
@@ -20,9 +22,8 @@ export interface Tour {
     shortDesc: string;
     longDesc: string;
     duration: string;
-    capacity: number;
     location: string;
-    status: "ACTIVE" | "INACTIVE";
+    status: "ACTIVE" | "INACTIVE" | "DRAFT";
     tourDetails: TourDetail[];
 }
 
@@ -32,12 +33,22 @@ export interface Booking {
     id?: string;
     contactEmail: string;
     contactPhone: string;
+    contactFullName: string;
+    contactAddress: string;
     createdAt?: string;
     note?: string;
     status: BookingStatus;
-    totalPrice: number;
+    bookingDetails: BookingDetail[];
     updatedAt?: string;
-    id_user?: string; 
+    userId?: string;
+}
+
+export interface BookingDetail {
+    id?: string;
+    tourDetail: TourDetail;
+    tourPrice: TourPrice;
+    quantity: number;
+    price: number;
 }
 
 export interface Role {

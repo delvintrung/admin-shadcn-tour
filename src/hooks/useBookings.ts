@@ -6,8 +6,9 @@ export function useGetBookings() {
     return useQuery({
         queryKey: ["bookings"],
         queryFn: async () => {
-            const { data } = await AxiosAdmin.get<Booking[]>("/bookings");
-            return data;
+            const { data } = await AxiosAdmin.get<Booking[]>("/booking");
+            // @ts-ignore
+            return data.data.result;
         },
     });
 }
@@ -19,7 +20,7 @@ export function useGetBooking(id: string) {
             const { data } = await AxiosAdmin.get<Booking>(`/bookings/${id}`);
             return data;
         },
-        enabled: !!id, // Chỉ fetch khi có ID
+        enabled: !!id,
     });
 }
 
